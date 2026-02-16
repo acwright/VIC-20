@@ -167,11 +167,14 @@ KERNAL_ROM      = $E000         ; KERNAL ROM start
 ;=============================================================================
 ; KERNAL Routines
 ;=============================================================================
+; Internal KERNAL routines (address may vary by ROM version)
 CINT            = $E518         ; Initialize screen editor
-IOINIT          = $E109         ; Initialize I/O
+IOINIT          = $FDF9         ; Initialize I/O
 RAMTAS          = $FD8D         ; Initialize RAM
-RESTOR          = $FD15         ; Restore default I/O vectors
+RESTOR          = $FD52         ; Restore default I/O vectors
 VECTOR          = $FD1A         ; Manage RAM vectors
+
+; KERNAL Jump Table (standard across all VIC-20s)
 SETMSG          = $FF90         ; Control KERNAL messages
 SECOND          = $FF93         ; Send secondary address
 TKSA            = $FF96         ; Send secondary address for talk

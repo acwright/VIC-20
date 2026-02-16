@@ -1,16 +1,15 @@
 ca65 V2.19 - Git 0fca83500
-Main file   : ./src/hello.asm
-Current file: ./src/hello.asm
+Main file   : hellocart.asm
+Current file: hellocart.asm
 
 000000r 1               ;
 000000r 1               ; A simple VIC-20 Hello, World!
 000000r 1               ;
 000000r 1               
 000000r 1               .segment "STARTUP"
-000000r 1               .segment "INIT"
 000000r 1               .segment "CODE"
 000000r 1               
-000000r 1               .include "../../VIC-20.inc"
+000000r 1               .include "../VIC-20.inc"
 000000r 2               ; VIC-20 Include File for ca65
 000000r 2               ; Memory addresses, KERNAL routines, and hardware registers
 000000r 2               ; Compatible with both NTSC and PAL VIC-20 systems
@@ -180,11 +179,14 @@ Current file: ./src/hello.asm
 000000r 2               ;=============================================================================
 000000r 2               ; KERNAL Routines
 000000r 2               ;=============================================================================
+000000r 2               ; Internal KERNAL routines (address may vary by ROM version)
 000000r 2               CINT            = $E518         ; Initialize screen editor
-000000r 2               IOINIT          = $E109         ; Initialize I/O
+000000r 2               IOINIT          = $FDF9         ; Initialize I/O
 000000r 2               RAMTAS          = $FD8D         ; Initialize RAM
-000000r 2               RESTOR          = $FD15         ; Restore default I/O vectors
+000000r 2               RESTOR          = $FD52         ; Restore default I/O vectors
 000000r 2               VECTOR          = $FD1A         ; Manage RAM vectors
+000000r 2               
+000000r 2               ; KERNAL Jump Table (standard across all VIC-20s)
 000000r 2               SETMSG          = $FF90         ; Control KERNAL messages
 000000r 2               SECOND          = $FF93         ; Send secondary address
 000000r 2               TKSA            = $FF96         ; Send secondary address for talk
@@ -262,26 +264,41 @@ Current file: ./src/hello.asm
 000000r 2               ;=============================================================================
 000000r 2               
 000000r 1               
-000000r 1               main:
-000000r 1  A9 08          lda #8
-000002r 1  8D 0F 90       sta VIC_CRF               ; Set background and border to black
-000005r 1  A9 05          lda #CHR_WHITE
-000007r 1  20 D2 FF       jsr CHROUT                ; Set text color to white
-00000Ar 1  A9 93          lda #CHR_CLEAR
-00000Cr 1  20 D2 FF       jsr CHROUT                ; Clear the screen
-00000Fr 1               
-00000Fr 1  A0 00          ldy #0
-000011r 1               loop:
-000011r 1  B9 rr rr       lda message,y
-000014r 1  F0 07          beq done
-000016r 1  20 D2 FF       jsr CHROUT
-000019r 1  C8             iny
-00001Ar 1  4C rr rr       jmp loop
-00001Dr 1               done:
-00001Dr 1  60             rts
-00001Er 1               
-00001Er 1               message:
-00001Er 1  48 45 4C 4C    .asciiz "hello vic-20!"   ; Characters need to be lowercase so they are properly mapped to PETSCII
-000022r 1  4F 20 56 49  
-000026r 1  43 2D 32 30  
-00002Br 1               
+000000r 1  rr rr        .addr	main			; Cartridge load address
+000002r 1  rr rr        .addr	main		  ; Address of start-up code
+000004r 1  41 30 C3 C2  .byte	$41,$30,$C3,$C2,$CD	; ROM present signature
+000008r 1  CD           
+000009r 1               
+000009r 1               main:
+000009r 1  78             sei                       ; Disable interrupts
+00000Ar 1  D8             cld                       ; Clear decimal mode
+00000Br 1  A2 FF          ldx	#$FF                  ; Set stack pointer to $FF
+00000Dr 1  9A             txs
+00000Er 1  20 8D FD       jsr	RAMTAS
+000011r 1  20 52 FD       jsr	RESTOR
+000014r 1  20 F9 FD       jsr	IOINIT
+000017r 1  20 18 E5       jsr	CINT
+00001Ar 1  58             cli
+00001Br 1               
+00001Br 1  A9 08          lda #8
+00001Dr 1  8D 0F 90       sta VIC_CRF               ; Set background and border to black
+000020r 1  A9 05          lda #CHR_WHITE
+000022r 1  20 D2 FF       jsr CHROUT                ; Set text color to white
+000025r 1  A9 93          lda #CHR_CLEAR
+000027r 1  20 D2 FF       jsr CHROUT                ; Clear the screen
+00002Ar 1               
+00002Ar 1  A0 00          ldy #0
+00002Cr 1               loop:
+00002Cr 1  B9 rr rr       lda message,y
+00002Fr 1  F0 07          beq done
+000031r 1  20 D2 FF       jsr CHROUT
+000034r 1  C8             iny
+000035r 1  4C rr rr       jmp loop
+000038r 1               done:
+000038r 1  4C rr rr       jmp done
+00003Br 1               
+00003Br 1               message:
+00003Br 1  48 45 4C 4C    .asciiz "hello vic-20!"   ; Characters need to be lowercase so they are properly mapped to PETSCII
+00003Fr 1  4F 20 56 49  
+000043r 1  43 2D 32 30  
+000048r 1               
