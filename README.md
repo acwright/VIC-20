@@ -17,7 +17,7 @@ Each program directory contains its own Makefile. To build a program, navigate t
 ### Example
 
 ```bash
-cd hello
+cd <directory-name>
 make        # Build the program
 make view   # View the hexdump
 make run    # Run in emulator
