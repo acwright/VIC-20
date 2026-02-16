@@ -6,7 +6,7 @@
 .segment "INIT"
 .segment "CODE"
 
-.include "../../VIC20.inc"
+.include "../../VIC-20.inc"
 
 main:
   lda #8
