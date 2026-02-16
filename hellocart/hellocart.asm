@@ -1,19 +1,17 @@
-; 
-; A simple VIC-20 Hello, World!
-;
+;----------------------;
+; VIC-20 Hello, World! ;
+;----------------------;
 
 .include "../vic20.inc"
+.segment "CART"
 
-.segment "HEADER"
+; Cart Header
+.addr	cold_start			      ; Cold start vector
+.addr	warm_start		        ; Warm start vector
+.byte	$41,$30,$C3,$C2,$CD	  ; Cartridge signature (A0CBM)
 
-; VIC-20 Cart Header (9 bytes)
-.addr	main			            ; Cartridge load address
-.addr	main		              ; Address of start-up code
-.byte	$41,$30,$C3,$C2,$CD	  ; ROM present signature
-
-.segment "CODE"
-
-main:
+; Cold Start
+cold_start:
   sei                       ; Disable interrupts
   cld                       ; Clear decimal mode
   ldx	#$FF                  ; Set stack pointer to $FF
@@ -23,7 +21,9 @@ main:
   jsr	IOINIT
   jsr	CINT
   cli
-  
+
+; Warm Start
+warm_start:
   lda #8
   sta VIC_CRF               ; Set background and border to black
   lda #CHR_WHITE
@@ -38,8 +38,10 @@ loop:
   jsr CHROUT
   iny
   jmp loop
-done:
-  jmp done
 
+done:
+  jmp done                  ; Loop forever
+
+; Message
 message:
   .asciiz "hello vic-20!"   ; Characters need to be lowercase so they are properly mapped to PETSCII

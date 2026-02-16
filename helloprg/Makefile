@@ -1,11 +1,12 @@
 TARGET = helloprg
+CONFIG = vic20
 
 .PHONY: all clean
 
 all: build
 
 build: $(TARGET).asm
-	cl65 -t vic20 -l $(TARGET).lst -o $(TARGET).prg $(TARGET).asm
+	cl65 -C ../$(CONFIG).cfg -l $(TARGET).lst -o $(TARGET).prg $(TARGET).asm 
 	
 view:
 	hexdump -C $(TARGET).prg

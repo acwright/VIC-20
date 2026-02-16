@@ -1,11 +1,12 @@
 TARGET = hellocart
+CONFIG = vic20-8k
 
 .PHONY: all clean
 
 all: build
 
 build: $(TARGET).asm
-	cl65 -C vic20-8k.cfg -t vic20 -l $(TARGET).lst -o $(TARGET).crt $(TARGET).asm
+	cl65 -C ../$(CONFIG).cfg -l $(TARGET).lst -o $(TARGET).crt $(TARGET).asm
 	
 view:
 	hexdump -C $(TARGET).crt
