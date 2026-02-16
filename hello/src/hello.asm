@@ -1,12 +1,21 @@
+; 
+; A simple VIC-20 Hello, World!
+;
+
 .segment "STARTUP"
 .segment "INIT"
 .segment "CODE"
 
-CHROUT = $FFD2
+.include "../../VIC20.inc"
 
 main:
-  lda #147
-  jsr CHROUT
+  lda #8
+  sta VIC_CRF               ; Set background and border to black
+  lda #CHR_WHITE
+  jsr CHROUT                ; Set text color to white
+  lda #CHR_CLEAR            
+  jsr CHROUT                ; Clear the screen
+
   ldy #0
 loop:
   lda message,y
@@ -18,4 +27,4 @@ done:
   rts
 
 message:
-  .asciiz "hello vic-20!"
+  .asciiz "hello vic-20!"   ; Characters need to be lowercase so they are properly mapped to PETSCII

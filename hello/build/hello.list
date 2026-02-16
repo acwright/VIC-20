@@ -2,27 +2,286 @@ ca65 V2.19 - Git 0fca83500
 Main file   : ./src/hello.asm
 Current file: ./src/hello.asm
 
+000000r 1               ;
+000000r 1               ; A simple VIC-20 Hello, World!
+000000r 1               ;
+000000r 1               
 000000r 1               .segment "STARTUP"
 000000r 1               .segment "INIT"
 000000r 1               .segment "CODE"
 000000r 1               
-000000r 1               CHROUT = $FFD2
+000000r 1               .include "../../VIC20.inc"
+000000r 2               ; VIC-20 Include File for ca65
+000000r 2               ; Memory addresses, KERNAL routines, and hardware registers
+000000r 2               ; Compatible with both NTSC and PAL VIC-20 systems
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Zero Page Locations
+000000r 2               ;=============================================================================
+000000r 2               VARTAB          = $2D           ; Pointer to start of BASIC variables
+000000r 2               ARYTAB          = $2F           ; Pointer to start of BASIC arrays
+000000r 2               STREND          = $31           ; Pointer to end of BASIC arrays
+000000r 2               FRETOP          = $33           ; Pointer to bottom of string space
+000000r 2               MEMSIZ          = $37           ; Pointer to top of BASIC memory
+000000r 2               TIME            = $A0           ; Jiffy clock (3 bytes)
+000000r 2               TIMER           = $A0           ; Same as TIME
+000000r 2               STATUS          = $90           ; I/O status byte
+000000r 2               STKEY           = $91           ; STOP key flag
+000000r 2               MSGFLG          = $9D           ; Kernal message control flag
+000000r 2               FNLEN           = $B7           ; Length of filename
+000000r 2               LA              = $B8           ; Logical file number
+000000r 2               SA              = $B9           ; Secondary address
+000000r 2               FA              = $BA           ; Device number
+000000r 2               FNADR           = $BB           ; Pointer to filename (2 bytes)
+000000r 2               STAL            = $C1           ; Pointer for tape I/O (2 bytes)
+000000r 2               EAL             = $C3           ; Pointer for tape I/O (2 bytes)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Screen and Color Memory (Unexpanded VIC-20)
+000000r 2               ;=============================================================================
+000000r 2               SCREEN          = $1E00         ; Screen memory start (22x23 default)
+000000r 2               COLRAM          = $9600         ; Color RAM start
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; User BASIC Memory
+000000r 2               ;=============================================================================
+000000r 2               BASIC_START     = $1001         ; Start of BASIC program area
+000000r 2               BASIC_END       = $1E00         ; End of BASIC (screen memory starts)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; VIC Chip Registers (6560/6561 Video Interface Chip)
+000000r 2               ;=============================================================================
+000000r 2               VIC             = $9000         ; Base address of VIC chip
+000000r 2               
+000000r 2               ; Individual VIC registers
+000000r 2               VIC_CR0         = $9000         ; Horizontal centering (bit 7 = interlace)
+000000r 2               VIC_CR1         = $9001         ; Vertical centering
+000000r 2               VIC_CR2         = $9002         ; Video matrix columns (bits 0-6, bit 7=raster)
+000000r 2               VIC_CR3         = $9003         ; Raster value (bits 1-7 = rows*2, bit 0=character size)
+000000r 2               VIC_CR4         = $9004         ; TV raster beam location (read only)
+000000r 2               VIC_CR5         = $9005         ; Video matrix start address (bits 4-7)
+000000r 2               VIC_CRA         = $900A         ; Bass frequency
+000000r 2               VIC_CRB         = $900B         ; Alto frequency
+000000r 2               VIC_CRC         = $900C         ; Soprano frequency
+000000r 2               VIC_CRD         = $900D         ; Noise frequency
+000000r 2               VIC_CRE         = $900E         ; Auxiliary color / Volume
+000000r 2               VIC_CRF         = $900F         ; Screen & border colors / reverse mode
+000000r 2               
+000000r 2               ; VIC register aliases
+000000r 2               VIC_HORZ        = VIC_CR0       ; Horizontal position
+000000r 2               VIC_VERT        = VIC_CR1       ; Vertical position
+000000r 2               VIC_COLUMNS     = VIC_CR2       ; Number of columns
+000000r 2               VIC_ROWS        = VIC_CR3       ; Number of rows
+000000r 2               VIC_RASTER      = VIC_CR4       ; Raster position
+000000r 2               VIC_ORIGIN      = VIC_CR5       ; Screen memory location
+000000r 2               VIC_BASS        = VIC_CRA       ; Sound: Bass voice
+000000r 2               VIC_ALTO        = VIC_CRB       ; Sound: Alto voice
+000000r 2               VIC_SOPRANO     = VIC_CRC       ; Sound: Soprano voice
+000000r 2               VIC_NOISE       = VIC_CRD       ; Sound: Noise voice
+000000r 2               VIC_VOLUME      = VIC_CRE       ; Volume control (bits 0-3)
+000000r 2               VIC_AUX_COLOR   = VIC_CRE       ; Auxiliary color (bits 4-7)
+000000r 2               VIC_BACKGROUND  = VIC_CRF       ; Background color (bits 4-7)
+000000r 2               VIC_BORDER      = VIC_CRF       ; Border color (bits 0-2)
+000000r 2               VIC_REVERSE     = VIC_CRF       ; Reverse mode (bit 3)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; VIA Chip #1 Registers (6522 VIA - Keyboard, Joystick)
+000000r 2               ;=============================================================================
+000000r 2               VIA1            = $9110         ; Base address of VIA1
+000000r 2               VIA1_PB         = $9110         ; Port B (keyboard row select, joystick)
+000000r 2               VIA1_PA1        = $9111         ; Port A (keyboard column read)
+000000r 2               VIA1_DDRB       = $9112         ; Data direction register B
+000000r 2               VIA1_DDRA       = $9113         ; Data direction register A
+000000r 2               VIA1_T1CL       = $9114         ; Timer 1 counter low
+000000r 2               VIA1_T1CH       = $9115         ; Timer 1 counter high
+000000r 2               VIA1_T1LL       = $9116         ; Timer 1 latch low
+000000r 2               VIA1_T1LH       = $9117         ; Timer 1 latch high
+000000r 2               VIA1_T2CL       = $9118         ; Timer 2 counter low
+000000r 2               VIA1_T2CH       = $9119         ; Timer 2 counter high
+000000r 2               VIA1_SR         = $911A         ; Shift register
+000000r 2               VIA1_ACR        = $911B         ; Auxiliary control register
+000000r 2               VIA1_PCR        = $911C         ; Peripheral control register
+000000r 2               VIA1_IFR        = $911D         ; Interrupt flag register
+000000r 2               VIA1_IER        = $911E         ; Interrupt enable register
+000000r 2               VIA1_PA2        = $911F         ; Port A (no handshake)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; VIA Chip #2 Registers (6522 VIA - Serial, Tape, Joystick)
+000000r 2               ;=============================================================================
+000000r 2               VIA2            = $9120         ; Base address of VIA2
+000000r 2               VIA2_PB         = $9120         ; Port B (serial bus, tape control, joystick)
+000000r 2               VIA2_PA1        = $9121         ; Port A (serial bus)
+000000r 2               VIA2_DDRB       = $9122         ; Data direction register B
+000000r 2               VIA2_DDRA       = $9123         ; Data direction register A
+000000r 2               VIA2_T1CL       = $9124         ; Timer 1 counter low
+000000r 2               VIA2_T1CH       = $9125         ; Timer 1 counter high
+000000r 2               VIA2_T1LL       = $9126         ; Timer 1 latch low
+000000r 2               VIA2_T1LH       = $9127         ; Timer 1 latch high
+000000r 2               VIA2_T2CL       = $9128         ; Timer 2 counter low
+000000r 2               VIA2_T2CH       = $9129         ; Timer 2 counter high
+000000r 2               VIA2_SR         = $912A         ; Shift register
+000000r 2               VIA2_ACR        = $912B         ; Auxiliary control register
+000000r 2               VIA2_PCR        = $912C         ; Peripheral control register
+000000r 2               VIA2_IFR        = $912D         ; Interrupt flag register
+000000r 2               VIA2_IER        = $912E         ; Interrupt enable register
+000000r 2               VIA2_PA2        = $912F         ; Port A (no handshake)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Color Codes
+000000r 2               ;=============================================================================
+000000r 2               BLACK           = $00
+000000r 2               WHITE           = $01
+000000r 2               RED             = $02
+000000r 2               CYAN            = $03
+000000r 2               PURPLE          = $04
+000000r 2               GREEN           = $05
+000000r 2               BLUE            = $06
+000000r 2               YELLOW          = $07
+000000r 2               ORANGE          = $08
+000000r 2               LIGHT_ORANGE    = $09
+000000r 2               PINK            = $0A
+000000r 2               LIGHT_CYAN      = $0B
+000000r 2               LIGHT_PURPLE    = $0C
+000000r 2               LIGHT_GREEN     = $0D
+000000r 2               LIGHT_BLUE      = $0E
+000000r 2               LIGHT_YELLOW    = $0F
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Character Codes (PETSCII)
+000000r 2               ;=============================================================================
+000000r 2               CHR_RETURN      = $0D
+000000r 2               CHR_SPACE       = $20
+000000r 2               CHR_DELETE      = $14
+000000r 2               CHR_INSERT      = $94
+000000r 2               CHR_HOME        = $13
+000000r 2               CHR_CLEAR       = $93
+000000r 2               CHR_RVSON       = $12           ; Reverse on
+000000r 2               CHR_RVSOFF      = $92           ; Reverse off
+000000r 2               CHR_DOWN        = $11
+000000r 2               CHR_UP          = $91
+000000r 2               CHR_RIGHT       = $1D
+000000r 2               CHR_LEFT        = $9D
+000000r 2               CHR_BLACK       = $90
+000000r 2               CHR_WHITE       = $05
+000000r 2               CHR_RED         = $1C
+000000r 2               CHR_CYAN        = $9F
+000000r 2               CHR_PURPLE      = $9C
+000000r 2               CHR_GREEN       = $1E
+000000r 2               CHR_BLUE        = $9E
+000000r 2               CHR_YELLOW      = $9B
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; ROM Addresses
+000000r 2               ;=============================================================================
+000000r 2               CHARROM         = $8000         ; Character ROM
+000000r 2               BASIC_ROM       = $C000         ; BASIC ROM start
+000000r 2               KERNAL_ROM      = $E000         ; KERNAL ROM start
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; KERNAL Routines
+000000r 2               ;=============================================================================
+000000r 2               CINT            = $E518         ; Initialize screen editor
+000000r 2               IOINIT          = $E109         ; Initialize I/O
+000000r 2               RAMTAS          = $FD8D         ; Initialize RAM
+000000r 2               RESTOR          = $FD15         ; Restore default I/O vectors
+000000r 2               VECTOR          = $FD1A         ; Manage RAM vectors
+000000r 2               SETMSG          = $FF90         ; Control KERNAL messages
+000000r 2               SECOND          = $FF93         ; Send secondary address
+000000r 2               TKSA            = $FF96         ; Send secondary address for talk
+000000r 2               MEMTOP          = $FF99         ; Read/set top of memory
+000000r 2               MEMBOT          = $FF9C         ; Read/set bottom of memory
+000000r 2               SCNKEY          = $FF9F         ; Scan keyboard
+000000r 2               SETTMO          = $FFA2         ; Set timeout for serial bus
+000000r 2               ACPTR           = $FFA5         ; Input byte from serial bus
+000000r 2               CIOUT           = $FFA8         ; Output byte to serial bus
+000000r 2               UNTLK           = $FFAB         ; Send UNTALK to serial bus
+000000r 2               UNLSN           = $FFAE         ; Send UNLISTEN to serial bus
+000000r 2               LISTEN          = $FFB1         ; Send LISTEN to serial bus
+000000r 2               TALK            = $FFB4         ; Send TALK to serial bus
+000000r 2               READST          = $FFB7         ; Read I/O status word
+000000r 2               SETLFS          = $FFBA         ; Set logical file parameters
+000000r 2               SETNAM          = $FFBD         ; Set filename
+000000r 2               OPEN            = $FFC0         ; Open a logical file
+000000r 2               CLOSE           = $FFC3         ; Close a logical file
+000000r 2               CHKIN           = $FFC6         ; Define file as default input
+000000r 2               CHKOUT          = $FFC9         ; Define file as default output
+000000r 2               CLRCHN          = $FFCC         ; Restore default I/O devices
+000000r 2               CHRIN           = $FFCF         ; Input character from channel
+000000r 2               CHROUT          = $FFD2         ; Output character to channel
+000000r 2               LOAD            = $FFD5         ; Load RAM from device
+000000r 2               SAVE            = $FFD8         ; Save RAM to device
+000000r 2               SETTIM          = $FFDB         ; Set 24-hour clock
+000000r 2               RDTIM           = $FFDE         ; Read 24-hour clock
+000000r 2               STOP            = $FFE1         ; Check STOP key
+000000r 2               GETIN           = $FFE4         ; Get character from keyboard
+000000r 2               CLALL           = $FFE7         ; Close all channels and files
+000000r 2               UDTIM           = $FFEA         ; Increment 24-hour clock
+000000r 2               SCREEN_ORG      = $FFED         ; Return screen organization
+000000r 2               PLOT            = $FFF0         ; Read/set cursor X/Y position
+000000r 2               IOBASE          = $FFF3         ; Return I/O base address
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; IRQ/NMI Vectors
+000000r 2               ;=============================================================================
+000000r 2               IRQ_VECTOR      = $0314         ; IRQ vector (2 bytes)
+000000r 2               BRK_VECTOR      = $0316         ; BRK vector (2 bytes)
+000000r 2               NMI_VECTOR      = $0318         ; NMI vector (2 bytes)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Hardware Vectors (in ROM)
+000000r 2               ;=============================================================================
+000000r 2               HW_NMI          = $FFFA         ; NMI vector
+000000r 2               HW_RESET        = $FFFC         ; Reset vector
+000000r 2               HW_IRQ          = $FFFE         ; IRQ/BRK vector
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Useful Constants
+000000r 2               ;=============================================================================
+000000r 2               SCREEN_COLS     = 22            ; Default screen columns
+000000r 2               SCREEN_ROWS     = 23            ; Default screen rows
+000000r 2               JIFFY_PAL       = 50            ; Jiffies per second (PAL)
+000000r 2               JIFFY_NTSC      = 60            ; Jiffies per second (NTSC)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Memory Expansion Configurations
+000000r 2               ;=============================================================================
+000000r 2               ; RAM Block 0 (BLK0) = $0400-$0FFF (3K)
+000000r 2               ; RAM Block 1 (BLK1) = $2000-$3FFF (8K)
+000000r 2               ; RAM Block 2 (BLK2) = $4000-$5FFF (8K)
+000000r 2               ; RAM Block 3 (BLK3) = $6000-$7FFF (8K)
+000000r 2               ; RAM Block 5 (BLK5) = $A000-$BFFF (8K)
+000000r 2               
+000000r 2               BLK0            = $0400         ; 3K expansion
+000000r 2               BLK1            = $2000         ; 8K expansion
+000000r 2               BLK2            = $4000         ; 8K expansion
+000000r 2               BLK3            = $6000         ; 8K expansion
+000000r 2               BLK5            = $A000         ; 8K expansion
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; End of VIC20.inc
+000000r 2               ;=============================================================================
+000000r 2               
 000000r 1               
 000000r 1               main:
-000000r 1  A9 93          lda #147
-000002r 1  20 D2 FF       jsr CHROUT
-000005r 1  A0 00          ldy #0
-000007r 1               loop:
-000007r 1  B9 rr rr       lda message,y
-00000Ar 1  F0 07          beq done
-00000Cr 1  20 D2 FF       jsr CHROUT
-00000Fr 1  C8             iny
-000010r 1  4C rr rr       jmp loop
-000013r 1               done:
-000013r 1  60             rts
-000014r 1               
-000014r 1               message:
-000014r 1  48 45 4C 4C    .asciiz "hello vic-20!"
-000018r 1  4F 20 56 49  
-00001Cr 1  43 2D 32 30  
-000021r 1               
+000000r 1  A9 08          lda #8
+000002r 1  8D 0F 90       sta VIC_CRF               ; Set background and border to black
+000005r 1  A9 05          lda #CHR_WHITE
+000007r 1  20 D2 FF       jsr CHROUT                ; Set text color to white
+00000Ar 1  A9 93          lda #CHR_CLEAR
+00000Cr 1  20 D2 FF       jsr CHROUT                ; Clear the screen
+00000Fr 1               
+00000Fr 1  A0 00          ldy #0
+000011r 1               loop:
+000011r 1  B9 rr rr       lda message,y
+000014r 1  F0 07          beq done
+000016r 1  20 D2 FF       jsr CHROUT
+000019r 1  C8             iny
+00001Ar 1  4C rr rr       jmp loop
+00001Dr 1               done:
+00001Dr 1  60             rts
+00001Er 1               
+00001Er 1               message:
+00001Er 1  48 45 4C 4C    .asciiz "hello vic-20!"   ; Characters need to be lowercase so they are properly mapped to PETSCII
+000022r 1  4F 20 56 49  
+000026r 1  43 2D 32 30  
+00002Br 1               
