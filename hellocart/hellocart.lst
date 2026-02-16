@@ -6,10 +6,7 @@ Current file: hellocart.asm
 000000r 1               ; A simple VIC-20 Hello, World!
 000000r 1               ;
 000000r 1               
-000000r 1               .segment "STARTUP"
-000000r 1               .segment "CODE"
-000000r 1               
-000000r 1               .include "../VIC-20.inc"
+000000r 1               .include "../vic20.inc"
 000000r 2               ; VIC-20 Include File for ca65
 000000r 2               ; Memory addresses, KERNAL routines, and hardware registers
 000000r 2               ; Compatible with both NTSC and PAL VIC-20 systems
@@ -264,41 +261,46 @@ Current file: hellocart.asm
 000000r 2               ;=============================================================================
 000000r 2               
 000000r 1               
-000000r 1  rr rr        .addr	main			; Cartridge load address
-000002r 1  rr rr        .addr	main		  ; Address of start-up code
-000004r 1  41 30 C3 C2  .byte	$41,$30,$C3,$C2,$CD	; ROM present signature
+000000r 1               .segment "HEADER"
+000000r 1               
+000000r 1               ; VIC-20 Cart Header (9 bytes)
+000000r 1  rr rr        .addr	main			            ; Cartridge load address
+000002r 1  rr rr        .addr	main		              ; Address of start-up code
+000004r 1  41 30 C3 C2  .byte	$41,$30,$C3,$C2,$CD	  ; ROM present signature
 000008r 1  CD           
 000009r 1               
-000009r 1               main:
-000009r 1  78             sei                       ; Disable interrupts
-00000Ar 1  D8             cld                       ; Clear decimal mode
-00000Br 1  A2 FF          ldx	#$FF                  ; Set stack pointer to $FF
-00000Dr 1  9A             txs
-00000Er 1  20 8D FD       jsr	RAMTAS
-000011r 1  20 52 FD       jsr	RESTOR
-000014r 1  20 F9 FD       jsr	IOINIT
-000017r 1  20 18 E5       jsr	CINT
-00001Ar 1  58             cli
-00001Br 1               
-00001Br 1  A9 08          lda #8
-00001Dr 1  8D 0F 90       sta VIC_CRF               ; Set background and border to black
-000020r 1  A9 05          lda #CHR_WHITE
-000022r 1  20 D2 FF       jsr CHROUT                ; Set text color to white
-000025r 1  A9 93          lda #CHR_CLEAR
-000027r 1  20 D2 FF       jsr CHROUT                ; Clear the screen
-00002Ar 1               
-00002Ar 1  A0 00          ldy #0
-00002Cr 1               loop:
-00002Cr 1  B9 rr rr       lda message,y
-00002Fr 1  F0 07          beq done
-000031r 1  20 D2 FF       jsr CHROUT
-000034r 1  C8             iny
-000035r 1  4C rr rr       jmp loop
-000038r 1               done:
-000038r 1  4C rr rr       jmp done
-00003Br 1               
-00003Br 1               message:
-00003Br 1  48 45 4C 4C    .asciiz "hello vic-20!"   ; Characters need to be lowercase so they are properly mapped to PETSCII
-00003Fr 1  4F 20 56 49  
-000043r 1  43 2D 32 30  
-000048r 1               
+000009r 1               .segment "CODE"
+000000r 1               
+000000r 1               main:
+000000r 1  78             sei                       ; Disable interrupts
+000001r 1  D8             cld                       ; Clear decimal mode
+000002r 1  A2 FF          ldx	#$FF                  ; Set stack pointer to $FF
+000004r 1  9A             txs
+000005r 1  20 8D FD       jsr	RAMTAS
+000008r 1  20 52 FD       jsr	RESTOR
+00000Br 1  20 F9 FD       jsr	IOINIT
+00000Er 1  20 18 E5       jsr	CINT
+000011r 1  58             cli
+000012r 1               
+000012r 1  A9 08          lda #8
+000014r 1  8D 0F 90       sta VIC_CRF               ; Set background and border to black
+000017r 1  A9 05          lda #CHR_WHITE
+000019r 1  20 D2 FF       jsr CHROUT                ; Set text color to white
+00001Cr 1  A9 93          lda #CHR_CLEAR
+00001Er 1  20 D2 FF       jsr CHROUT                ; Clear the screen
+000021r 1               
+000021r 1  A0 00          ldy #0
+000023r 1               loop:
+000023r 1  B9 rr rr       lda message,y
+000026r 1  F0 07          beq done
+000028r 1  20 D2 FF       jsr CHROUT
+00002Br 1  C8             iny
+00002Cr 1  4C rr rr       jmp loop
+00002Fr 1               done:
+00002Fr 1  4C rr rr       jmp done
+000032r 1               
+000032r 1               message:
+000032r 1  48 45 4C 4C    .asciiz "hello vic-20!"   ; Characters need to be lowercase so they are properly mapped to PETSCII
+000036r 1  4F 20 56 49  
+00003Ar 1  43 2D 32 30  
+00003Fr 1               

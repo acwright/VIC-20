@@ -2,14 +2,16 @@
 ; A simple VIC-20 Hello, World!
 ;
 
-.segment "STARTUP"
+.include "../vic20.inc"
+
+.segment "HEADER"
+
+; VIC-20 Cart Header (9 bytes)
+.addr	main			            ; Cartridge load address
+.addr	main		              ; Address of start-up code
+.byte	$41,$30,$C3,$C2,$CD	  ; ROM present signature
+
 .segment "CODE"
-
-.include "../VIC-20.inc"
-
-.addr	main			; Cartridge load address
-.addr	main		  ; Address of start-up code
-.byte	$41,$30,$C3,$C2,$CD	; ROM present signature
 
 main:
   sei                       ; Disable interrupts

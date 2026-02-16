@@ -10,7 +10,7 @@ Current file: helloprg.asm
 000000r 1               .segment "INIT"
 000000r 1               .segment "CODE"
 000000r 1               
-000000r 1               .include "../VIC-20.inc"
+000000r 1               .include "../vic20.inc"
 000000r 2               ; VIC-20 Include File for ca65
 000000r 2               ; Memory addresses, KERNAL routines, and hardware registers
 000000r 2               ; Compatible with both NTSC and PAL VIC-20 systems
