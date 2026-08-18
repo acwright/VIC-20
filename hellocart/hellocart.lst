@@ -1,4 +1,4 @@
-ca65 V2.19 - Git 0fca83500
+ca65 V2.19 - Git 547d92358
 Main file   : hellocart.asm
 Current file: hellocart.asm
 
@@ -263,13 +263,13 @@ Current file: hellocart.asm
 000000r 1               .segment "CART"
 000000r 1               
 000000r 1               ; Cart Header
-000000r 1  rr rr        .addr	cold_start			      ; Cold start vector
-000002r 1  rr rr        .addr	warm_start		        ; Warm start vector
+000000r 1  rr rr        .addr	ColdStart			        ; Cold start vector
+000002r 1  rr rr        .addr	WarmStart		          ; Warm start vector
 000004r 1  41 30 C3 C2  .byte	$41,$30,$C3,$C2,$CD	  ; Cartridge signature (A0CBM)
 000008r 1  CD           
 000009r 1               
 000009r 1               ; Cold Start
-000009r 1               cold_start:
+000009r 1               ColdStart:
 000009r 1  78             sei                       ; Disable interrupts
 00000Ar 1  D8             cld                       ; Clear decimal mode
 00000Br 1  A2 FF          ldx	#$FF                  ; Set stack pointer to $FF
@@ -281,7 +281,7 @@ Current file: hellocart.asm
 00001Ar 1  58             cli
 00001Br 1               
 00001Br 1               ; Warm Start
-00001Br 1               warm_start:
+00001Br 1               WarmStart:
 00001Br 1  A9 08          lda #8
 00001Dr 1  8D 0F 90       sta VIC_CRF               ; Set background and border to black
 000020r 1  A9 05          lda #CHR_WHITE
@@ -290,18 +290,18 @@ Current file: hellocart.asm
 000027r 1  20 D2 FF       jsr CHROUT                ; Clear the screen
 00002Ar 1               
 00002Ar 1  A0 00          ldy #0
-00002Cr 1               loop:
-00002Cr 1  B9 rr rr       lda message,y
-00002Fr 1  F0 07          beq done
+00002Cr 1               Loop:
+00002Cr 1  B9 rr rr       lda Message,y
+00002Fr 1  F0 07          beq Done
 000031r 1  20 D2 FF       jsr CHROUT
 000034r 1  C8             iny
-000035r 1  4C rr rr       jmp loop
+000035r 1  4C rr rr       jmp Loop
 000038r 1               
-000038r 1               done:
-000038r 1  4C rr rr       jmp done                  ; Loop forever
+000038r 1               Done:
+000038r 1  4C rr rr       jmp Done                  ; Loop forever
 00003Br 1               
 00003Br 1               ; Message
-00003Br 1               message:
+00003Br 1               Message:
 00003Br 1  48 45 4C 4C    .asciiz "hello vic-20!"   ; Characters need to be lowercase so they are properly mapped to PETSCII
 00003Fr 1  4F 20 56 49  
 000043r 1  43 2D 32 30  

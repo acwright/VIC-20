@@ -6,21 +6,21 @@
 .segment "PROGRAM"
  
 ; BASIC upstart
-  .word   basic_upstart
-basic_upstart:  
-  .word   @basic_upstart_end
+  .word   BasicUpstart
+BasicUpstart:  
+  .word   @BasicUpstartEnd
   .word   10                ; Line number
   .byte   $9E               ; SYS token
-  .byte   <(((start / 1000) .mod 10) + $30)
-  .byte   <(((start /  100) .mod 10) + $30)
-  .byte   <(((start /   10) .mod 10) + $30)
-  .byte   <(((start /    1) .mod 10) + $30)
+  .byte   <(((Start / 1000) .mod 10) + $30)
+  .byte   <(((Start /  100) .mod 10) + $30)
+  .byte   <(((Start /   10) .mod 10) + $30)
+  .byte   <(((Start /    1) .mod 10) + $30)
   .byte   $00               ; End of BASIC line
-@basic_upstart_end:   
+@BasicUpstartEnd:   
   .word   0                 ; BASIC end marker
 
 ; Start
-start:
+Start:
   lda #8
   sta VIC_CRF               ; Set background and border to black
   lda #CHR_WHITE
@@ -29,16 +29,16 @@ start:
   jsr CHROUT                ; Clear the screen
 
   ldy #0
-loop:
-  lda message,y
-  beq done
+Loop:
+  lda Message,y
+  beq Done
   jsr CHROUT
   iny
-  jmp loop
+  jmp Loop
 
-done:
+Done:
   rts
 
 ; Message
-message:
+Message:
   .asciiz "hello vic-20!"   ; Characters need to be lowercase so they are properly mapped to PETSCII
