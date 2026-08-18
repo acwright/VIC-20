@@ -114,6 +114,16 @@ VIA2_IER        = $912E         ; Interrupt enable register
 VIA2_PA2        = $912F         ; Port A (no handshake)
 
 ;=============================================================================
+; Joystick (VIA1 Port A = $9111, VIA2 Port B = $9120)
+; Active-low: bit is 0 when the switch is closed (direction/fire pressed)
+;=============================================================================
+JOY_UP          = %00000100     ; VIA1_PA1 bit 2
+JOY_DOWN        = %00001000     ; VIA1_PA1 bit 3
+JOY_LEFT        = %00010000     ; VIA1_PA1 bit 4
+JOY_FIRE        = %00100000     ; VIA1_PA1 bit 5
+JOY_RIGHT       = %10000000     ; VIA2_PB bit 7
+
+;=============================================================================
 ; Color Codes
 ;=============================================================================
 BLACK           = $00

@@ -1,0 +1,548 @@
+ca65 V2.19 - Git 547d92358
+Main file   : inputdemo.asm
+Current file: inputdemo.asm
+
+000000r 1               ;----------------------;
+000000r 1               ; VIC-20 Input Demo    ;
+000000r 1               ;----------------------;
+000000r 1               
+000000r 1               .include "../vic20.inc"
+000000r 2               ; VIC-20 Include File for ca65
+000000r 2               ; Memory addresses, KERNAL routines, and hardware registers
+000000r 2               ; Compatible with both NTSC and PAL VIC-20 systems
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Zero Page Locations
+000000r 2               ;=============================================================================
+000000r 2               VARTAB          = $2D           ; Pointer to start of BASIC variables
+000000r 2               ARYTAB          = $2F           ; Pointer to start of BASIC arrays
+000000r 2               STREND          = $31           ; Pointer to end of BASIC arrays
+000000r 2               FRETOP          = $33           ; Pointer to bottom of string space
+000000r 2               MEMSIZ          = $37           ; Pointer to top of BASIC memory
+000000r 2               TIME            = $A0           ; Jiffy clock (3 bytes)
+000000r 2               TIMER           = $A0           ; Same as TIME
+000000r 2               STATUS          = $90           ; I/O status byte
+000000r 2               STKEY           = $91           ; STOP key flag
+000000r 2               MSGFLG          = $9D           ; Kernal message control flag
+000000r 2               FNLEN           = $B7           ; Length of filename
+000000r 2               LA              = $B8           ; Logical file number
+000000r 2               SA              = $B9           ; Secondary address
+000000r 2               FA              = $BA           ; Device number
+000000r 2               FNADR           = $BB           ; Pointer to filename (2 bytes)
+000000r 2               STAL            = $C1           ; Pointer for tape I/O (2 bytes)
+000000r 2               EAL             = $C3           ; Pointer for tape I/O (2 bytes)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Screen and Color Memory (Unexpanded VIC-20)
+000000r 2               ;=============================================================================
+000000r 2               SCREEN          = $1E00         ; Screen memory start (22x23 default)
+000000r 2               COLRAM          = $9600         ; Color RAM start
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; User BASIC Memory
+000000r 2               ;=============================================================================
+000000r 2               BASIC_START     = $1001         ; Start of BASIC program area
+000000r 2               BASIC_END       = $1E00         ; End of BASIC (screen memory starts)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; VIC Chip Registers (6560/6561 Video Interface Chip)
+000000r 2               ;=============================================================================
+000000r 2               VIC             = $9000         ; Base address of VIC chip
+000000r 2               
+000000r 2               ; Individual VIC registers
+000000r 2               VIC_CR0         = $9000         ; Horizontal centering (bit 7 = interlace)
+000000r 2               VIC_CR1         = $9001         ; Vertical centering
+000000r 2               VIC_CR2         = $9002         ; Video matrix columns (bits 0-6, bit 7=raster)
+000000r 2               VIC_CR3         = $9003         ; Raster value (bits 1-7 = rows*2, bit 0=character size)
+000000r 2               VIC_CR4         = $9004         ; TV raster beam location (read only)
+000000r 2               VIC_CR5         = $9005         ; Video matrix start address (bits 4-7)
+000000r 2               VIC_CRA         = $900A         ; Bass frequency
+000000r 2               VIC_CRB         = $900B         ; Alto frequency
+000000r 2               VIC_CRC         = $900C         ; Soprano frequency
+000000r 2               VIC_CRD         = $900D         ; Noise frequency
+000000r 2               VIC_CRE         = $900E         ; Auxiliary color / Volume
+000000r 2               VIC_CRF         = $900F         ; Screen & border colors / reverse mode
+000000r 2               
+000000r 2               ; VIC register aliases
+000000r 2               VIC_HORZ        = VIC_CR0       ; Horizontal position
+000000r 2               VIC_VERT        = VIC_CR1       ; Vertical position
+000000r 2               VIC_COLUMNS     = VIC_CR2       ; Number of columns
+000000r 2               VIC_ROWS        = VIC_CR3       ; Number of rows
+000000r 2               VIC_RASTER      = VIC_CR4       ; Raster position
+000000r 2               VIC_ORIGIN      = VIC_CR5       ; Screen memory location
+000000r 2               VIC_BASS        = VIC_CRA       ; Sound: Bass voice
+000000r 2               VIC_ALTO        = VIC_CRB       ; Sound: Alto voice
+000000r 2               VIC_SOPRANO     = VIC_CRC       ; Sound: Soprano voice
+000000r 2               VIC_NOISE       = VIC_CRD       ; Sound: Noise voice
+000000r 2               VIC_VOLUME      = VIC_CRE       ; Volume control (bits 0-3)
+000000r 2               VIC_AUX_COLOR   = VIC_CRE       ; Auxiliary color (bits 4-7)
+000000r 2               VIC_BACKGROUND  = VIC_CRF       ; Background color (bits 4-7)
+000000r 2               VIC_BORDER      = VIC_CRF       ; Border color (bits 0-2)
+000000r 2               VIC_REVERSE     = VIC_CRF       ; Reverse mode (bit 3)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; VIA Chip #1 Registers (6522 VIA - Keyboard, Joystick)
+000000r 2               ;=============================================================================
+000000r 2               VIA1            = $9110         ; Base address of VIA1
+000000r 2               VIA1_PB         = $9110         ; Port B (keyboard row select, joystick)
+000000r 2               VIA1_PA1        = $9111         ; Port A (keyboard column read)
+000000r 2               VIA1_DDRB       = $9112         ; Data direction register B
+000000r 2               VIA1_DDRA       = $9113         ; Data direction register A
+000000r 2               VIA1_T1CL       = $9114         ; Timer 1 counter low
+000000r 2               VIA1_T1CH       = $9115         ; Timer 1 counter high
+000000r 2               VIA1_T1LL       = $9116         ; Timer 1 latch low
+000000r 2               VIA1_T1LH       = $9117         ; Timer 1 latch high
+000000r 2               VIA1_T2CL       = $9118         ; Timer 2 counter low
+000000r 2               VIA1_T2CH       = $9119         ; Timer 2 counter high
+000000r 2               VIA1_SR         = $911A         ; Shift register
+000000r 2               VIA1_ACR        = $911B         ; Auxiliary control register
+000000r 2               VIA1_PCR        = $911C         ; Peripheral control register
+000000r 2               VIA1_IFR        = $911D         ; Interrupt flag register
+000000r 2               VIA1_IER        = $911E         ; Interrupt enable register
+000000r 2               VIA1_PA2        = $911F         ; Port A (no handshake)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; VIA Chip #2 Registers (6522 VIA - Serial, Tape, Joystick)
+000000r 2               ;=============================================================================
+000000r 2               VIA2            = $9120         ; Base address of VIA2
+000000r 2               VIA2_PB         = $9120         ; Port B (serial bus, tape control, joystick)
+000000r 2               VIA2_PA1        = $9121         ; Port A (serial bus)
+000000r 2               VIA2_DDRB       = $9122         ; Data direction register B
+000000r 2               VIA2_DDRA       = $9123         ; Data direction register A
+000000r 2               VIA2_T1CL       = $9124         ; Timer 1 counter low
+000000r 2               VIA2_T1CH       = $9125         ; Timer 1 counter high
+000000r 2               VIA2_T1LL       = $9126         ; Timer 1 latch low
+000000r 2               VIA2_T1LH       = $9127         ; Timer 1 latch high
+000000r 2               VIA2_T2CL       = $9128         ; Timer 2 counter low
+000000r 2               VIA2_T2CH       = $9129         ; Timer 2 counter high
+000000r 2               VIA2_SR         = $912A         ; Shift register
+000000r 2               VIA2_ACR        = $912B         ; Auxiliary control register
+000000r 2               VIA2_PCR        = $912C         ; Peripheral control register
+000000r 2               VIA2_IFR        = $912D         ; Interrupt flag register
+000000r 2               VIA2_IER        = $912E         ; Interrupt enable register
+000000r 2               VIA2_PA2        = $912F         ; Port A (no handshake)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Joystick (VIA1 Port A = $9111, VIA2 Port B = $9120)
+000000r 2               ; Active-low: bit is 0 when the switch is closed (direction/fire pressed)
+000000r 2               ;=============================================================================
+000000r 2               JOY_UP          = %00000100     ; VIA1_PA1 bit 2
+000000r 2               JOY_DOWN        = %00001000     ; VIA1_PA1 bit 3
+000000r 2               JOY_LEFT        = %00010000     ; VIA1_PA1 bit 4
+000000r 2               JOY_FIRE        = %00100000     ; VIA1_PA1 bit 5
+000000r 2               JOY_RIGHT       = %10000000     ; VIA2_PB bit 7
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Color Codes
+000000r 2               ;=============================================================================
+000000r 2               BLACK           = $00
+000000r 2               WHITE           = $01
+000000r 2               RED             = $02
+000000r 2               CYAN            = $03
+000000r 2               PURPLE          = $04
+000000r 2               GREEN           = $05
+000000r 2               BLUE            = $06
+000000r 2               YELLOW          = $07
+000000r 2               ORANGE          = $08
+000000r 2               LIGHT_ORANGE    = $09
+000000r 2               PINK            = $0A
+000000r 2               LIGHT_CYAN      = $0B
+000000r 2               LIGHT_PURPLE    = $0C
+000000r 2               LIGHT_GREEN     = $0D
+000000r 2               LIGHT_BLUE      = $0E
+000000r 2               LIGHT_YELLOW    = $0F
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Character Codes (PETSCII)
+000000r 2               ;=============================================================================
+000000r 2               CHR_RETURN      = $0D
+000000r 2               CHR_SPACE       = $20
+000000r 2               CHR_DELETE      = $14
+000000r 2               CHR_INSERT      = $94
+000000r 2               CHR_HOME        = $13
+000000r 2               CHR_CLEAR       = $93
+000000r 2               CHR_RVSON       = $12           ; Reverse on
+000000r 2               CHR_RVSOFF      = $92           ; Reverse off
+000000r 2               CHR_DOWN        = $11
+000000r 2               CHR_UP          = $91
+000000r 2               CHR_RIGHT       = $1D
+000000r 2               CHR_LEFT        = $9D
+000000r 2               CHR_BLACK       = $90
+000000r 2               CHR_WHITE       = $05
+000000r 2               CHR_RED         = $1C
+000000r 2               CHR_CYAN        = $9F
+000000r 2               CHR_PURPLE      = $9C
+000000r 2               CHR_GREEN       = $1E
+000000r 2               CHR_BLUE        = $9E
+000000r 2               CHR_YELLOW      = $9B
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; ROM Addresses
+000000r 2               ;=============================================================================
+000000r 2               CHARROM         = $8000         ; Character ROM
+000000r 2               BASIC_ROM       = $C000         ; BASIC ROM start
+000000r 2               KERNAL_ROM      = $E000         ; KERNAL ROM start
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; KERNAL Routines
+000000r 2               ;=============================================================================
+000000r 2               ; Internal KERNAL routines (address may vary by ROM version)
+000000r 2               CINT            = $E518         ; Initialize screen editor
+000000r 2               IOINIT          = $FDF9         ; Initialize I/O
+000000r 2               RAMTAS          = $FD8D         ; Initialize RAM
+000000r 2               RESTOR          = $FD52         ; Restore default I/O vectors
+000000r 2               VECTOR          = $FD1A         ; Manage RAM vectors
+000000r 2               
+000000r 2               ; KERNAL Jump Table (standard across all VIC-20s)
+000000r 2               SETMSG          = $FF90         ; Control KERNAL messages
+000000r 2               SECOND          = $FF93         ; Send secondary address
+000000r 2               TKSA            = $FF96         ; Send secondary address for talk
+000000r 2               MEMTOP          = $FF99         ; Read/set top of memory
+000000r 2               MEMBOT          = $FF9C         ; Read/set bottom of memory
+000000r 2               SCNKEY          = $FF9F         ; Scan keyboard
+000000r 2               SETTMO          = $FFA2         ; Set timeout for serial bus
+000000r 2               ACPTR           = $FFA5         ; Input byte from serial bus
+000000r 2               CIOUT           = $FFA8         ; Output byte to serial bus
+000000r 2               UNTLK           = $FFAB         ; Send UNTALK to serial bus
+000000r 2               UNLSN           = $FFAE         ; Send UNLISTEN to serial bus
+000000r 2               LISTEN          = $FFB1         ; Send LISTEN to serial bus
+000000r 2               TALK            = $FFB4         ; Send TALK to serial bus
+000000r 2               READST          = $FFB7         ; Read I/O status word
+000000r 2               SETLFS          = $FFBA         ; Set logical file parameters
+000000r 2               SETNAM          = $FFBD         ; Set filename
+000000r 2               OPEN            = $FFC0         ; Open a logical file
+000000r 2               CLOSE           = $FFC3         ; Close a logical file
+000000r 2               CHKIN           = $FFC6         ; Define file as default input
+000000r 2               CHKOUT          = $FFC9         ; Define file as default output
+000000r 2               CLRCHN          = $FFCC         ; Restore default I/O devices
+000000r 2               CHRIN           = $FFCF         ; Input character from channel
+000000r 2               CHROUT          = $FFD2         ; Output character to channel
+000000r 2               LOAD            = $FFD5         ; Load RAM from device
+000000r 2               SAVE            = $FFD8         ; Save RAM to device
+000000r 2               SETTIM          = $FFDB         ; Set 24-hour clock
+000000r 2               RDTIM           = $FFDE         ; Read 24-hour clock
+000000r 2               STOP            = $FFE1         ; Check STOP key
+000000r 2               GETIN           = $FFE4         ; Get character from keyboard
+000000r 2               CLALL           = $FFE7         ; Close all channels and files
+000000r 2               UDTIM           = $FFEA         ; Increment 24-hour clock
+000000r 2               SCREEN_ORG      = $FFED         ; Return screen organization
+000000r 2               PLOT            = $FFF0         ; Read/set cursor X/Y position
+000000r 2               IOBASE          = $FFF3         ; Return I/O base address
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; IRQ/NMI Vectors
+000000r 2               ;=============================================================================
+000000r 2               IRQ_VECTOR      = $0314         ; IRQ vector (2 bytes)
+000000r 2               BRK_VECTOR      = $0316         ; BRK vector (2 bytes)
+000000r 2               NMI_VECTOR      = $0318         ; NMI vector (2 bytes)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Hardware Vectors (in ROM)
+000000r 2               ;=============================================================================
+000000r 2               HW_NMI          = $FFFA         ; NMI vector
+000000r 2               HW_RESET        = $FFFC         ; Reset vector
+000000r 2               HW_IRQ          = $FFFE         ; IRQ/BRK vector
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Useful Constants
+000000r 2               ;=============================================================================
+000000r 2               SCREEN_COLS     = 22            ; Default screen columns
+000000r 2               SCREEN_ROWS     = 23            ; Default screen rows
+000000r 2               JIFFY_PAL       = 50            ; Jiffies per second (PAL)
+000000r 2               JIFFY_NTSC      = 60            ; Jiffies per second (NTSC)
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; Memory Expansion Configurations
+000000r 2               ;=============================================================================
+000000r 2               ; RAM Block 0 (BLK0) = $0400-$0FFF (3K)
+000000r 2               ; RAM Block 1 (BLK1) = $2000-$3FFF (8K)
+000000r 2               ; RAM Block 2 (BLK2) = $4000-$5FFF (8K)
+000000r 2               ; RAM Block 3 (BLK3) = $6000-$7FFF (8K)
+000000r 2               ; RAM Block 5 (BLK5) = $A000-$BFFF (8K)
+000000r 2               
+000000r 2               BLK0            = $0400         ; 3K expansion
+000000r 2               BLK1            = $2000         ; 8K expansion
+000000r 2               BLK2            = $4000         ; 8K expansion
+000000r 2               BLK3            = $6000         ; 8K expansion
+000000r 2               BLK5            = $A000         ; 8K expansion
+000000r 2               
+000000r 2               ;=============================================================================
+000000r 2               ; End of VIC20.inc
+000000r 2               ;=============================================================================
+000000r 2               
+000000r 1               .segment "CART"
+000000r 1               
+000000r 1               JOY_PREV = $FA              ; 1 byte, which directions were held last check
+000000r 1               CHAR_PTR = $FB              ; 2 bytes, screen RAM pointer
+000000r 1               PLAYER_X = $FD              ; 1 byte, player X (0-21)
+000000r 1               PLAYER_Y = $FE              ; 1 byte, player Y (0-22)
+000000r 1               PREV_X   = $F8              ; 1 byte, player X last drawn (for erase)
+000000r 1               PREV_Y   = $F9              ; 1 byte, player Y last drawn (for erase)
+000000r 1               
+000000r 1               ; Cart Header
+000000r 1  rr rr        .addr ColdStart              ; Cold start vector
+000002r 1  rr rr        .addr ColdStart              ; Warm start vector (RESTORE = full restart)
+000004r 1  41 30 C3 C2  .byte $41,$30,$C3,$C2,$CD    ; Cartridge signature (A0CBM)
+000008r 1  CD           
+000009r 1               
+000009r 1               ; Cold Start
+000009r 1               ColdStart:
+000009r 1  78             sei                        ; Disable interrupts
+00000Ar 1  D8             cld                        ; Clear decimal mode
+00000Br 1  A2 FF          ldx #$FF                   ; Set stack pointer to $FF
+00000Dr 1  9A             txs
+00000Er 1  20 8D FD       jsr RAMTAS                 ; Initialize RAM, set BASIC pointers
+000011r 1  20 52 FD       jsr RESTOR                 ; Restore default I/O vectors
+000014r 1  20 F9 FD       jsr IOINIT                 ; Initialize I/O chips
+000017r 1  20 18 E5       jsr CINT                   ; Initialize screen editor
+00001Ar 1  58             cli                        ; NMI warm entry arrives with I set
+00001Br 1               
+00001Br 1  A9 00          lda #0
+00001Dr 1  85 FB          sta CHAR_PTR
+00001Fr 1  85 FC          sta CHAR_PTR+1              ; Zero the char pointer
+000021r 1               
+000021r 1  A9 08          lda #8
+000023r 1  8D 0F 90       sta VIC_CRF                 ; Set background and border to black
+000026r 1  A9 FF          lda #$FF
+000028r 1  8D 05 90       sta VIC_CR5                 ; Set character set to $1C00
+00002Br 1               
+00002Br 1  20 rr rr       jsr LoadCharacters          ; Load our character set
+00002Er 1  20 rr rr       jsr ClearScreen             ; Clear the screen
+000031r 1  20 rr rr       jsr ClearColors             ; Clear the screen colors
+000034r 1               
+000034r 1  A9 0A          lda #10
+000036r 1  85 FD          sta PLAYER_X
+000038r 1  A9 0B          lda #11
+00003Ar 1  85 FE          sta PLAYER_Y                ; Initialize player pos to 10,11
+00003Cr 1  85 F8          sta PREV_X
+00003Er 1  85 F9          sta PREV_Y                  ; Erase pass starts at the same cell (no-op)
+000040r 1  A9 00          lda #0
+000042r 1  85 FA          sta JOY_PREV                ; No directions held yet
+000044r 1               
+000044r 1  A6 FD          ldx PLAYER_X
+000046r 1  A4 FE          ldy PLAYER_Y
+000048r 1  20 rr rr       jsr CalcScreenPtr
+00004Br 1  A0 00          ldy #0
+00004Dr 1  A9 01          lda #1
+00004Fr 1  91 FB          sta (CHAR_PTR),y            ; Draw the smiley at the starting cell
+000051r 1               
+000051r 1               Loop:
+000051r 1  20 rr rr       jsr CheckInput               ; Read the joystick, move the player
+000054r 1  20 rr rr       jsr UpdatePosition           ; Redraw if the position changed
+000057r 1  4C rr rr       jmp Loop                     ; Loop forever
+00005Ar 1               
+00005Ar 1               ; Moves the player one cell per direction press. CheckPress compares each
+00005Ar 1               ; direction's current state against JOY_PREV (what was held last check)
+00005Ar 1               ; and only signals a move on the release-to-press edge, so holding the
+00005Ar 1               ; stick doesn't repeat the move every time through the loop.
+00005Ar 1               CheckInput:
+00005Ar 1  AD 11 91       lda VIA1_PA1                ; Read up/down/left/fire (0 = pressed)
+00005Dr 1  29 04          and #JOY_UP
+00005Fr 1  A2 04          ldx #JOY_UP
+000061r 1  20 rr rr       jsr CheckPress
+000064r 1  90 06          bcc @UpDone
+000066r 1  A5 FE          lda PLAYER_Y
+000068r 1  F0 02          beq @UpDone                 ; already at top row
+00006Ar 1  C6 FE          dec PLAYER_Y
+00006Cr 1               @UpDone:
+00006Cr 1               
+00006Cr 1  AD 11 91       lda VIA1_PA1
+00006Fr 1  29 08          and #JOY_DOWN
+000071r 1  A2 08          ldx #JOY_DOWN
+000073r 1  20 rr rr       jsr CheckPress
+000076r 1  90 08          bcc @DownDone
+000078r 1  A5 FE          lda PLAYER_Y
+00007Ar 1  C9 16          cmp #SCREEN_ROWS-1
+00007Cr 1  F0 02          beq @DownDone                ; already at bottom row
+00007Er 1  E6 FE          inc PLAYER_Y
+000080r 1               @DownDone:
+000080r 1               
+000080r 1  AD 11 91       lda VIA1_PA1
+000083r 1  29 10          and #JOY_LEFT
+000085r 1  A2 10          ldx #JOY_LEFT
+000087r 1  20 rr rr       jsr CheckPress
+00008Ar 1  90 06          bcc @LeftDone
+00008Cr 1  A5 FD          lda PLAYER_X
+00008Er 1  F0 02          beq @LeftDone                ; already at leftmost column
+000090r 1  C6 FD          dec PLAYER_X
+000092r 1               @LeftDone:
+000092r 1               
+000092r 1                 ; Right lives on VIA2 and needs its DDR flipped to input first: VIA2's
+000092r 1                 ; port B defaults to all-output (it also drives keyboard columns), so
+000092r 1                 ; reading it normally just returns the last value we wrote, not the
+000092r 1                 ; switch state. Flip bit 7 to input, read, then put it straight back
+000092r 1                 ; or keyboard scanning breaks.
+000092r 1  78             sei
+000093r 1  A9 7F          lda #%01111111
+000095r 1  8D 22 91       sta VIA2_DDRB
+000098r 1  AD 20 91       lda VIA2_PB
+00009Br 1  29 80          and #JOY_RIGHT
+00009Dr 1  48             pha
+00009Er 1  A9 FF          lda #%11111111
+0000A0r 1  8D 22 91       sta VIA2_DDRB
+0000A3r 1  58             cli
+0000A4r 1  68             pla
+0000A5r 1  A2 80          ldx #JOY_RIGHT
+0000A7r 1  20 rr rr       jsr CheckPress
+0000AAr 1  90 08          bcc @RightDone
+0000ACr 1  A5 FD          lda PLAYER_X
+0000AEr 1  C9 15          cmp #SCREEN_COLS-1
+0000B0r 1  F0 02          beq @RightDone                ; already at rightmost column
+0000B2r 1  E6 FD          inc PLAYER_X
+0000B4r 1               @RightDone:
+0000B4r 1  60             rts
+0000B5r 1               
+0000B5r 1               ; Determines whether a direction just transitioned from released to
+0000B5r 1               ; pressed, and keeps JOY_PREV in sync either way.
+0000B5r 1               ; In:  A = port byte AND'd with the direction's mask (0 = pressed)
+0000B5r 1               ;      X = the same direction mask, matching its JOY_PREV bit
+0000B5r 1               ; Out: Carry set if this is a new press (caller should move);
+0000B5r 1               ;      clear if it's still held or was already released.
+0000B5r 1               CheckPress:
+0000B5r 1  C9 00          cmp #0
+0000B7r 1  D0 0E          bne @Released
+0000B9r 1  8A             txa
+0000BAr 1  25 FA          and JOY_PREV
+0000BCr 1  D0 07          bne @StillHeld                ; bit already set, nothing to do
+0000BEr 1  8A             txa
+0000BFr 1  05 FA          ora JOY_PREV
+0000C1r 1  85 FA          sta JOY_PREV
+0000C3r 1  38             sec
+0000C4r 1  60             rts
+0000C5r 1               @StillHeld:
+0000C5r 1  18             clc
+0000C6r 1  60             rts
+0000C7r 1               @Released:
+0000C7r 1  8A             txa
+0000C8r 1  49 FF          eor #$FF
+0000CAr 1  25 FA          and JOY_PREV
+0000CCr 1  85 FA          sta JOY_PREV
+0000CEr 1  18             clc
+0000CFr 1  60             rts
+0000D0r 1               
+0000D0r 1               UpdatePosition:
+0000D0r 1  A5 FD          lda PLAYER_X
+0000D2r 1  C5 F8          cmp PREV_X
+0000D4r 1  D0 06          bne @Moved
+0000D6r 1  A5 FE          lda PLAYER_Y
+0000D8r 1  C5 F9          cmp PREV_Y
+0000DAr 1  F0 22          beq @Done                   ; position unchanged, don't touch screen RAM
+0000DCr 1               @Moved:
+0000DCr 1  A6 F8          ldx PREV_X
+0000DEr 1  A4 F9          ldy PREV_Y
+0000E0r 1  20 rr rr       jsr CalcScreenPtr
+0000E3r 1  A0 00          ldy #0
+0000E5r 1  A9 00          lda #0
+0000E7r 1  91 FB          sta (CHAR_PTR),y            ; erase the cell the player left
+0000E9r 1               
+0000E9r 1  A6 FD          ldx PLAYER_X
+0000EBr 1  A4 FE          ldy PLAYER_Y
+0000EDr 1  20 rr rr       jsr CalcScreenPtr
+0000F0r 1  A0 00          ldy #0
+0000F2r 1  A9 01          lda #1
+0000F4r 1  91 FB          sta (CHAR_PTR),y            ; draw the smiley at the current cell
+0000F6r 1               
+0000F6r 1  A5 FD          lda PLAYER_X
+0000F8r 1  85 F8          sta PREV_X
+0000FAr 1  A5 FE          lda PLAYER_Y
+0000FCr 1  85 F9          sta PREV_Y
+0000FEr 1               @Done:
+0000FEr 1  60             rts
+0000FFr 1               
+0000FFr 1               ; Computes a screen RAM pointer for a given cell into CHAR_PTR. Row
+0000FFr 1               ; offsets are added SCREEN_COLS at a time since the screen (506 cells)
+0000FFr 1               ; is too big to reach with a single 8-bit index register.
+0000FFr 1               ; In: X = column (0-21), Y = row (0-22)
+0000FFr 1               CalcScreenPtr:
+0000FFr 1  A9 00          lda #$00
+000101r 1  85 FB          sta CHAR_PTR
+000103r 1  A9 1E          lda #$1E
+000105r 1  85 FC          sta CHAR_PTR+1              ; CHAR_PTR = $1E00 (screen RAM)
+000107r 1               @RowLoop:
+000107r 1  C0 00          cpy #0
+000109r 1  F0 0F          beq @AddColumn
+00010Br 1  A5 FB          lda CHAR_PTR
+00010Dr 1  18             clc
+00010Er 1  69 16          adc #SCREEN_COLS
+000110r 1  85 FB          sta CHAR_PTR
+000112r 1  90 02          bcc @NoCarry
+000114r 1  E6 FC          inc CHAR_PTR+1              ; carry into the high byte
+000116r 1               @NoCarry:
+000116r 1  88             dey
+000117r 1  4C rr rr       jmp @RowLoop
+00011Ar 1               @AddColumn:
+00011Ar 1  8A             txa
+00011Br 1  18             clc
+00011Cr 1  65 FB          adc CHAR_PTR
+00011Er 1  85 FB          sta CHAR_PTR
+000120r 1  90 02          bcc @Done
+000122r 1  E6 FC          inc CHAR_PTR+1
+000124r 1               @Done:
+000124r 1  60             rts
+000125r 1               
+000125r 1               ClearScreen:
+000125r 1  A9 00          lda #$00
+000127r 1  85 FB          sta CHAR_PTR
+000129r 1  A9 1E          lda #$1E
+00012Br 1  85 FC          sta CHAR_PTR+1              ; CHAR_PTR = $1E00 (screen RAM)
+00012Dr 1               
+00012Dr 1  A2 02          ldx #$02                    ; 2 passes of 253 = 506 cells (22x23 screen)
+00012Fr 1  A0 FD          ldy #$FD                    ; 253 cells per pass
+000131r 1               @ClearScreenLoop:
+000131r 1  A9 00          lda #0                      ; character 0 (clear)
+000133r 1  88             dey
+000134r 1  91 FB          sta (CHAR_PTR),y            ; store character to screen RAM
+000136r 1  D0 F9          bne @ClearScreenLoop
+000138r 1  A5 FB          lda CHAR_PTR
+00013Ar 1  18             clc
+00013Br 1  69 FD          adc #$FD                    ; advance pointer 253 bytes to the next pass
+00013Dr 1  85 FB          sta CHAR_PTR
+00013Fr 1  90 02          bcc @ClearScreenSkipInc
+000141r 1  E6 FC          inc CHAR_PTR+1              ; carry into the high byte
+000143r 1               @ClearScreenSkipInc:
+000143r 1  CA             dex
+000144r 1  D0 EB          bne @ClearScreenLoop
+000146r 1  60             rts
+000147r 1               
+000147r 1               ClearColors:
+000147r 1  A0 00          ldy #$00
+000149r 1               @ClearColorsLoop:
+000149r 1  A9 07          lda #YELLOW
+00014Br 1  99 00 96       sta $9600,y
+00014Er 1  99 FD 96       sta $96FD,y                 ; second block, offset 253 bytes ($96FD = $9600+$FD)
+000151r 1  C8             iny
+000152r 1  C0 FD          cpy #$FD
+000154r 1  D0 F3          bne @ClearColorsLoop
+000156r 1  60             rts
+000157r 1               
+000157r 1               LoadCharacters:
+000157r 1  A2 0F          ldx #CHAR_LEN-1
+000159r 1               @LoadCharactersLoop:
+000159r 1  BD rr rr       lda Characters,x
+00015Cr 1  9D 00 1C       sta $1C00,x                 ; copy into the character set at $1C00
+00015Fr 1  CA             dex
+000160r 1  10 F7          bpl @LoadCharactersLoop
+000162r 1  60             rts
+000163r 1               
+000163r 1               Characters:
+000163r 1                 ; 0 - Empty
+000163r 1  00             .byte %00000000
+000164r 1  00             .byte %00000000
+000165r 1  00             .byte %00000000
+000166r 1  00             .byte %00000000
+000167r 1  00             .byte %00000000
+000168r 1  00             .byte %00000000
+000169r 1  00             .byte %00000000
+00016Ar 1  00             .byte %00000000
+00016Br 1               
+00016Br 1                 ; 1 - Smiley
+00016Br 1  3C             .byte %00111100
+00016Cr 1  7E             .byte %01111110
+00016Dr 1  DB             .byte %11011011
+00016Er 1  FF             .byte %11111111
+00016Fr 1  DB             .byte %11011011
+000170r 1  E7             .byte %11100111
+000171r 1  7E             .byte %01111110
+000172r 1  3C             .byte %00111100
+000173r 1               CHAR_LEN = * - Characters
+000173r 1               
