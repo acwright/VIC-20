@@ -15,5 +15,4 @@ run:
 	xvic -cartA $(TARGET).crt &> /dev/null
 
 clean:
-	rm $(TARGET).crt
-	rm $(TARGET).lst
+	rm -f $(TARGET).crt $(TARGET).lst

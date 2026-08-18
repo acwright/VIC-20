@@ -15,5 +15,4 @@ run:
 	xvic $(TARGET).prg &> /dev/null
 
 clean:
-	rm $(TARGET).prg
-	rm $(TARGET).lst
+	rm -f $(TARGET).prg $(TARGET).lst
