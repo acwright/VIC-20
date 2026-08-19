@@ -11,11 +11,11 @@
 ; itself never mentions a state by name - it just samples the joystick
 ; and asks the state machine to run whatever state we're currently in.
 
-.include "../vic20.inc"
+.include "../VIC20.inc"
 
 .segment "CART"
 
-.include "defs.asm"          ; memory map, constants, macros
+.include "Defs.asm"          ; memory map, constants, macros
 
 ; Cart Header
 .addr ColdStart              ; Cold start vector
@@ -56,10 +56,10 @@ MainLoop:
 ;--------------------------------------------------------------------;
 ; Everything else                                                     ;
 ;--------------------------------------------------------------------;
-.include "state.asm"         ; ChangeState / UpdateState and the tables
-.include "start.asm"         ; STATE_START handlers
-.include "game.asm"          ; STATE_GAME handlers
-.include "gameover.asm"      ; STATE_GAMEOVER handlers
-.include "input.asm"         ; ReadJoystick
-.include "screen.asm"        ; ClearScreen, DrawCell, PrintString, ...
-.include "chars.asm"         ; LoadCharacters and the glyph data
+.include "State.asm"         ; ChangeState / UpdateState and the tables
+.include "Start.asm"         ; STATE_START handlers
+.include "Game.asm"          ; STATE_GAME handlers
+.include "GameOver.asm"      ; STATE_GAMEOVER handlers
+.include "Input.asm"         ; ReadJoystick
+.include "Screen.asm"        ; ClearScreen, DrawCell, PrintString, ...
+.include "Chars.asm"         ; LoadCharacters and the glyph data

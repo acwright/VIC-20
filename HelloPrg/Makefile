@@ -1,5 +1,5 @@
-TARGET = helloprg
-CONFIG = vic20
+TARGET = HelloPrg
+CONFIG = VIC20
 
 .PHONY: all clean
 

@@ -1,5 +1,5 @@
-TARGET = tiledemo
-CONFIG = vic20-8k
+TARGET = TileDemo
+CONFIG = VIC20-8K
 
 .PHONY: all clean
 

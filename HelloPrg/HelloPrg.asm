@@ -2,7 +2,7 @@
 ; VIC-20 Hello, World! ;
 ;----------------------;
 
-.include "../vic20.inc"
+.include "../VIC20.inc"
 .segment "PROGRAM"
  
 ; BASIC upstart

@@ -1,15 +1,13 @@
-TARGET = smileyquest
-CONFIG = vic20-8k
-SOURCES = $(TARGET).asm defs.asm state.asm start.asm game.asm \
-          gameover.asm input.asm screen.asm chars.asm
+TARGET = InputDemo
+CONFIG = VIC20-8K
 
 .PHONY: all clean
 
 all: build
 
-build: $(SOURCES)
+build: $(TARGET).asm
 	cl65 -C ../$(CONFIG).cfg -l $(TARGET).lst -o $(TARGET).crt $(TARGET).asm
-
+	
 view:
 	hexdump -C $(TARGET).crt
 

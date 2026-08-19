@@ -1,13 +1,15 @@
-TARGET = hellocart
-CONFIG = vic20-8k
+TARGET = SmileyQuest
+CONFIG = VIC20-8K
+SOURCES = $(TARGET).asm Defs.asm State.asm Start.asm Game.asm \
+          GameOver.asm Input.asm Screen.asm Chars.asm
 
 .PHONY: all clean
 
 all: build
 
-build: $(TARGET).asm
+build: $(SOURCES)
 	cl65 -C ../$(CONFIG).cfg -l $(TARGET).lst -o $(TARGET).crt $(TARGET).asm
-	
+
 view:
 	hexdump -C $(TARGET).crt
 

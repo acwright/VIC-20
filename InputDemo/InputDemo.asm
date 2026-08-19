@@ -2,7 +2,7 @@
 ; VIC-20 Input Demo    ;
 ;----------------------;
 
-.include "../vic20.inc"
+.include "../VIC20.inc"
 .segment "CART"
 
 JOY_PREV = $FA              ; 1 byte, which directions were held last check

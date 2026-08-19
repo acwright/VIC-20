@@ -2,7 +2,7 @@
 ; VIC-20 Tile Demo     ;
 ;----------------------;
 
-.include "../vic20.inc"
+.include "../VIC20.inc"
 .segment "CART"
 
 CHAR_PTR = $FB              ; 2 bytes, screen RAM pointer
